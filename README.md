@@ -63,7 +63,7 @@ com os olhos fechados você não está forçando a vista.
   olhos estão fechados. Roda **100% local** (modelo de ~3 MB baixado na 1ª vez).
 - Ligado/desligado por `ENABLE_EYES_CLOSED_REST` em [config.py](config.py).
 - Só conta como descanso se os olhos ficarem fechados por
-  `EYES_CLOSED_REST_SECONDS` (padrão 60 s) **contínuos** — um piscar normal
+  `EYES_CLOSED_REST_SECONDS` (padrão 30 s) **contínuos** — um piscar normal
   nunca chega perto disso.
 - O limiar `EYE_CLOSED_THRESHOLD` (padrão 0.45) define a partir de que ponto o
   olho é considerado fechado. Se não estiver disparando, tente abaixá-lo (ex.:
@@ -145,7 +145,7 @@ Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
 | `ALERT_AFTER_MINUTES` | `60` | Minutos contínuos até o alerta |
 | `RESET_AFTER_SECONDS` | `120` | Segundos sem rosto para zerar o contador |
 | `ENABLE_EYES_CLOSED_REST` | `True` | Trata olhos fechados por um tempo como descanso |
-| `EYES_CLOSED_REST_SECONDS` | `60` | Segundos de olhos fechados que contam como descanso |
+| `EYES_CLOSED_REST_SECONDS` | `30` | Segundos de olhos fechados que contam como descanso |
 | `EYE_CLOSED_THRESHOLD` | `0.45` | Limiar do blendshape para considerar o olho fechado |
 | `COOLDOWN_AFTER_ALERT_MINUTES` | `10` | Espera antes de poder alertar de novo |
 | `WEBCAM_INDEX` | `0` | Índice da webcam (0 = padrão) |

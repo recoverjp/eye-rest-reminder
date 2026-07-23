@@ -71,7 +71,7 @@ ENABLE_EYES_CLOSED_REST = True
 
 # Quantos segundos com os olhos CONTINUAMENTE fechados contam como descanso.
 # Um piscar normal (frações de segundo) nunca chega perto disso.
-EYES_CLOSED_REST_SECONDS = 60
+EYES_CLOSED_REST_SECONDS = 30
 
 # Limiar dos blendshapes de piscar (0 = aberto, ~1 = fechado) acima do qual
 # consideramos o olho fechado. Calibrado com dados reais: aberto fica ≤ ~0.4
