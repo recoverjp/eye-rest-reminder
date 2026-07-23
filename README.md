@@ -35,6 +35,20 @@ ou upload de qualquer tipo.
   (considera que você saiu).
 - Após um alerta, aguarda **10 minutos** antes de poder alertar de novo.
 
+### 🖐️ Bônus: alerta de "mão na cabeça" (opcional)
+
+Além do lembrete de descanso, a app pode te avisar sempre que você levar a
+**mão à cabeça** — útil, por exemplo, pra quebrar a mania de ficar coçando a
+cabeça. Usa o **MediaPipe** (Google) para achar os pontos do corpo (mãos +
+cabeça) e detecta quando uma mão sobe até perto da cabeça.
+
+- Ligado/desligado por `ENABLE_HAND_ON_HEAD` em [config.py](config.py).
+- Tem um *cooldown* (`HAND_ON_HEAD_COOLDOWN_SECONDS`, padrão 60 s) pra não
+  repetir o aviso a cada verificação enquanto a mão continua lá.
+- Também roda **100% local**. Baixa um modelo de ~5 MB na primeira execução.
+- Se o `mediapipe` não estiver instalado, o recurso simplesmente se desativa
+  (sem derrubar a app) — o lembrete de descanso continua normal.
+
 ### Detector: Haar (padrão) ou YOLO
 
 Por padrão a app usa o **Haar Cascade do OpenCV** para detecção de rosto — é
@@ -112,6 +126,8 @@ Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
 | `RESET_AFTER_SECONDS` | `120` | Segundos sem rosto para zerar o contador |
 | `COOLDOWN_AFTER_ALERT_MINUTES` | `10` | Espera antes de poder alertar de novo |
 | `WEBCAM_INDEX` | `0` | Índice da webcam (0 = padrão) |
+| `ENABLE_HAND_ON_HEAD` | `True` | Liga o alerta de "mão na cabeça" (requer mediapipe) |
+| `HAND_ON_HEAD_COOLDOWN_SECONDS` | `60` | Espera entre alertas de "mão na cabeça" |
 | `DETECTOR` | `"haar"` | Backend de detecção: `"haar"` (leve) ou `"yolo"` |
 | `YOLO_MODEL` | `yolov8n.pt` | Modelo usado quando `DETECTOR = "yolo"` |
 | `DETECTION_CONFIDENCE` | `0.4` | Confiança mínima (usada só no YOLO) |
@@ -126,6 +142,7 @@ Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
 eye-rest-reminder/
   main.py                  ← loop principal
   detector.py              ← detecção de rosto (Haar) ou pessoa (YOLO)
+  gesture.py               ← detecção de "mão na cabeça" (MediaPipe)
   notifier.py              ← notificação Windows + som
   config.py                ← constantes configuráveis
   test_smoke.py            ← teste rápido de webcam + detector

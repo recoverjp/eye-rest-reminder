@@ -41,6 +41,21 @@ DETECTION_CONFIDENCE = 0.4
 FRAME_INTERVAL_SECONDS = 10.0
 
 # ---------------------------------------------------------------------------
+# Detecção de "mão na cabeça" (opcional — requer mediapipe)
+# ---------------------------------------------------------------------------
+
+# Liga/desliga o alerta quando você leva a mão à cabeça (ex.: mania de coçar).
+# Requer: pip install mediapipe  (baixa um modelo de ~5 MB na 1ª vez).
+ENABLE_HAND_ON_HEAD = True
+
+# Tempo mínimo (segundos) entre alertas de "mão na cabeça", para não repetir
+# a cada verificação enquanto a mão continua lá.
+HAND_ON_HEAD_COOLDOWN_SECONDS = 60
+
+HAND_ON_HEAD_TITLE = "Mão na cabeça ✋"
+HAND_ON_HEAD_MESSAGE = "✋ Você está com a mão na cabeça de novo — pare de coçar! \U0001F642"
+
+# ---------------------------------------------------------------------------
 # Configurações de alerta
 # ---------------------------------------------------------------------------
 

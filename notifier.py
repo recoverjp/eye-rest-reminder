@@ -34,14 +34,12 @@ def _play_sound() -> None:
         winsound.MessageBeep()
 
 
-def _show_notification() -> None:
+def _show_notification(title: str, message: str) -> None:
     """Exibe uma notificação popup nativa do Windows.
 
     Tenta usar `plyer` primeiro (mais portável) e, se indisponível, recorre
     ao `win10toast`.
     """
-    title = config.ALERT_TITLE
-    message = config.ALERT_MESSAGE
     duration = config.NOTIFICATION_DURATION_SECONDS
 
     # 1) Tenta via plyer
@@ -73,7 +71,17 @@ def _show_notification() -> None:
     print(f"\n{'=' * 60}\n{title}\n{message}\n{'=' * 60}\n")
 
 
-def send_alert() -> None:
-    """Dispara a notificação e o som de alerta."""
-    _show_notification()
+def notify(title: str, message: str) -> None:
+    """Dispara uma notificação (popup + som) com título/mensagem dados."""
+    _show_notification(title, message)
     _play_sound()
+
+
+def send_alert() -> None:
+    """Alerta de descanso dos olhos (usa título/mensagem do config)."""
+    notify(config.ALERT_TITLE, config.ALERT_MESSAGE)
+
+
+def send_hand_on_head_alert() -> None:
+    """Alerta de 'mão na cabeça' (usa título/mensagem do config)."""
+    notify(config.HAND_ON_HEAD_TITLE, config.HAND_ON_HEAD_MESSAGE)

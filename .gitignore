@@ -11,8 +11,9 @@ venv/
 env/
 ENV/
 
-# --- Pesos de modelo YOLO (baixados sob demanda; não versionar) ---
+# --- Modelos baixados sob demanda (não versionar) ---
 *.pt
+*.task
 
 # --- Sistema operacional ---
 Thumbs.db

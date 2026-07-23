@@ -1,12 +1,18 @@
-# Dependências padrão (detector Haar Cascade — leve, sem downloads pesados).
-# Nota: fixado em 4.x — o opencv-python 5.0 (pré-release) não inclui o
+# Dependências padrão (detector de rosto Haar Cascade — leve).
+# Nota: fixado em 4.x — o opencv 5.0 (pré-release) não inclui o
 # CascadeClassifier necessário para o Haar.
 opencv-python>=4.8,<5
 plyer>=2.1.0
 win10toast>=0.9
 
+# Detecção de "mão na cabeça" (ENABLE_HAND_ON_HEAD em config.py).
+# O mediapipe traz o opencv-contrib-python (superset do opencv-python).
+# Se você já tem o opencv-python instalado, desinstale-o antes para evitar
+# conflito de "cv2":  pip uninstall opencv-python
+# E fixe o contrib em 4.x:  pip install "opencv-contrib-python>=4.8,<5"
+mediapipe>=0.10
+
 # ---------------------------------------------------------------------------
-# OPCIONAL: apenas se você quiser usar o backend YOLO (DETECTOR = "yolo").
-# Atenção: puxa o PyTorch (~2,5 GB). Instale manualmente se precisar:
+# OPCIONAL: backend YOLO (DETECTOR = "yolo"). Puxa o PyTorch (~2,5 GB).
 #     pip install ultralytics
 # ---------------------------------------------------------------------------
