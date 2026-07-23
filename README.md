@@ -1,11 +1,18 @@
 # 👀 eye-rest-reminder
 
+![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
+![Platform](https://img.shields.io/badge/plataforma-Windows-0078D6?logo=windows&logoColor=white)
+![License](https://img.shields.io/badge/licença-MIT-3fbf6f)
+![Local](https://img.shields.io/badge/privacidade-100%25%20local-8a2be2)
+
 Aplicação Python que monitora sua webcam e avisa para **descansar os olhos**
 após **1 hora contínua** em frente ao computador.
 
 Usa detecção de rosto na webcam para saber se você está à frente do PC,
 conta o tempo contínuo de uso e dispara uma **notificação nativa do Windows**
 + **som de alerta** quando você passa do limite.
+
+![Preview do alerta em ação](assets/preview.png)
 
 ---
 
