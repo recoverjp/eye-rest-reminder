@@ -1,0 +1,24 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# --- Ambientes virtuais ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Pesos de modelo YOLO (baixados sob demanda; não versionar) ---
+*.pt
+
+# --- Sistema operacional ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- Editores/IDEs ---
+.vscode/
+.idea/
