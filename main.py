@@ -101,6 +101,21 @@ def main() -> None:
             print(f"  AVISO: 'mão na cabeça' desativado — {exc}")
             hand_detector = None
 
+    # Detector opcional de "olhos fechados" (para tratar como descanso).
+    eye_detector = None
+    if config.ENABLE_EYES_CLOSED_REST:
+        try:
+            from eyes import EyeStateDetector
+            print("Carregando detector de 'olhos fechados' (mediapipe)...")
+            eye_detector = EyeStateDetector()
+            print(
+                f"  Ativo. Olhos fechados por "
+                f"{config.EYES_CLOSED_REST_SECONDS}s contam como descanso."
+            )
+        except Exception as exc:
+            print(f"  AVISO: 'olhos fechados' desativado — {exc}")
+            eye_detector = None
+
     cap = cv2.VideoCapture(config.WEBCAM_INDEX, cv2.CAP_DSHOW)
     if not cap.isOpened():
         # Tenta sem o backend DSHOW (específico do Windows) como fallback.
@@ -126,6 +141,7 @@ def main() -> None:
     last_seen = None       # último instante em que houve detecção
     cooldown_until = 0.0   # não dispara novo alerta antes deste instante
     hand_cooldown_until = 0.0  # cooldown do alerta de "mão na cabeça"
+    eyes_closed_since = None    # instante em que os olhos começaram fechados
 
     try:
         while True:
@@ -165,7 +181,45 @@ def main() -> None:
                 except Exception as exc:
                     print(f"{_timestamp()} Erro na detecção de gesto: {exc}")
 
-            if face_present:
+            # Estado dos olhos (fechado/aberto), se o detector estiver ativo.
+            eyes_closed = None
+            if face_present and eye_detector is not None:
+                try:
+                    eyes_closed = eye_detector.eyes_closed(frame)
+                except Exception as exc:
+                    print(f"{_timestamp()} Erro na detecção de olhos: {exc}")
+
+            if face_present and eyes_closed:
+                # Olhos fechados: possível descanso — não conta tempo de tela.
+                last_seen = now
+                if eyes_closed_since is None:
+                    eyes_closed_since = now
+                closed_dur = now - eyes_closed_since
+
+                if (session_start is not None
+                        and closed_dur >= config.EYES_CLOSED_REST_SECONDS):
+                    print(
+                        f"{_timestamp()} Olhos fechados por "
+                        f"{_format_duration(closed_dur)} — DESCANSO! "
+                        f"Contador de tela zerado."
+                    )
+                    session_start = None
+                    cooldown_until = 0.0
+                    eyes_closed_since = None
+                else:
+                    restante = max(
+                        0,
+                        int(config.EYES_CLOSED_REST_SECONDS - closed_dur),
+                    )
+                    print(
+                        f"{_timestamp()} Olhos fechados "
+                        f"({_format_duration(closed_dur)}) — descanso em "
+                        f"~{restante}s"
+                    )
+
+            elif face_present:
+                # Rosto presente e olhos abertos (ou detector desligado).
+                eyes_closed_since = None
                 if session_start is None:
                     session_start = now
                 last_seen = now
@@ -186,6 +240,7 @@ def main() -> None:
                     # Aguarda o cooldown antes de poder disparar de novo.
                     cooldown_until = now + cooldown_seconds
             else:
+                eyes_closed_since = None
                 if session_start is not None and last_seen is not None:
                     absence = now - last_seen
                     if absence > config.RESET_AFTER_SECONDS:

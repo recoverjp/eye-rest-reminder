@@ -53,6 +53,22 @@ cabeça) e detecta quando uma mão sobe até perto da cabeça.
 - Se o `mediapipe` não estiver instalado, o recurso simplesmente se desativa
   (sem derrubar a app) — o lembrete de descanso continua normal.
 
+### 😴 Descanso por olhos fechados (opcional)
+
+Se você **fechar os olhos por um tempo** (descanso real, cochilo), a app
+considera isso um descanso e **zera o contador de tempo de tela** — afinal,
+com os olhos fechados você não está forçando a vista.
+
+- Usa o **MediaPipe Face Landmarker** (blendshapes `eyeBlink`) para saber se os
+  olhos estão fechados. Roda **100% local** (modelo de ~3 MB baixado na 1ª vez).
+- Ligado/desligado por `ENABLE_EYES_CLOSED_REST` em [config.py](config.py).
+- Só conta como descanso se os olhos ficarem fechados por
+  `EYES_CLOSED_REST_SECONDS` (padrão 60 s) **contínuos** — um piscar normal
+  nunca chega perto disso.
+- O limiar `EYE_CLOSED_THRESHOLD` (padrão 0.45) define a partir de que ponto o
+  olho é considerado fechado. Se não estiver disparando, tente abaixá-lo (ex.:
+  0.4); se disparar à toa, aumente.
+
 ### Detector: Haar (padrão) ou YOLO
 
 Por padrão a app usa o **Haar Cascade do OpenCV** para detecção de rosto — é
@@ -128,6 +144,9 @@ Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
 |---|---|---|
 | `ALERT_AFTER_MINUTES` | `60` | Minutos contínuos até o alerta |
 | `RESET_AFTER_SECONDS` | `120` | Segundos sem rosto para zerar o contador |
+| `ENABLE_EYES_CLOSED_REST` | `True` | Trata olhos fechados por um tempo como descanso |
+| `EYES_CLOSED_REST_SECONDS` | `60` | Segundos de olhos fechados que contam como descanso |
+| `EYE_CLOSED_THRESHOLD` | `0.45` | Limiar do blendshape para considerar o olho fechado |
 | `COOLDOWN_AFTER_ALERT_MINUTES` | `10` | Espera antes de poder alertar de novo |
 | `WEBCAM_INDEX` | `0` | Índice da webcam (0 = padrão) |
 | `ENABLE_HAND_ON_HEAD` | `True` | Liga o alerta de "mão na cabeça" (requer mediapipe) |
@@ -148,6 +167,7 @@ eye-rest-reminder/
   main.py                  ← loop principal
   detector.py              ← detecção de rosto (Haar) ou pessoa (YOLO)
   gesture.py               ← detecção de "mão na cabeça" (MediaPipe)
+  eyes.py                  ← detecção de "olhos fechados" (MediaPipe)
   notifier.py              ← notificação Windows + som
   config.py                ← constantes configuráveis
   test_smoke.py            ← teste rápido de webcam + detector

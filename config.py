@@ -62,6 +62,23 @@ HAND_ON_HEAD_TITLE = "Mão na cabeça ✋"
 HAND_ON_HEAD_MESSAGE = "✋ Você está com a mão na cabeça de novo — pare de coçar! \U0001F642"
 
 # ---------------------------------------------------------------------------
+# Descanso por "olhos fechados" (opcional — requer mediapipe)
+# ---------------------------------------------------------------------------
+
+# Se você fechar os olhos por um tempo, considera como descanso e ZERA o
+# contador de tempo de tela. Requer mediapipe (baixa um modelo de ~3 MB).
+ENABLE_EYES_CLOSED_REST = True
+
+# Quantos segundos com os olhos CONTINUAMENTE fechados contam como descanso.
+# Um piscar normal (frações de segundo) nunca chega perto disso.
+EYES_CLOSED_REST_SECONDS = 60
+
+# Limiar dos blendshapes de piscar (0 = aberto, ~1 = fechado) acima do qual
+# consideramos o olho fechado. Calibrado com dados reais: aberto fica ≤ ~0.4
+# e fechado ≥ ~0.5, então 0.45 separa bem. Ajuste se necessário.
+EYE_CLOSED_THRESHOLD = 0.45
+
+# ---------------------------------------------------------------------------
 # Configurações de alerta
 # ---------------------------------------------------------------------------
 
