@@ -43,6 +43,10 @@ cabeça. Usa o **MediaPipe** (Google) para achar os pontos do corpo (mãos +
 cabeça) e detecta quando uma mão sobe até perto da cabeça.
 
 - Ligado/desligado por `ENABLE_HAND_ON_HEAD` em [config.py](config.py).
+- **Anti-falso-positivo:** ao detectar a mão, ele **confirma por alguns
+  segundos** (`HAND_ON_HEAD_CONFIRM_SECONDS`, padrão 4 s) antes de avisar. Se a
+  mão sair nesse meio-tempo, ignora — assim uma coçada rápida ou ajeitar o
+  óculos **não** dispara o alerta; só um gesto sustentado dispara.
 - Tem um *cooldown* (`HAND_ON_HEAD_COOLDOWN_SECONDS`, padrão 60 s) pra não
   repetir o aviso a cada verificação enquanto a mão continua lá.
 - Também roda **100% local**. Baixa um modelo de ~5 MB na primeira execução.
@@ -127,6 +131,7 @@ Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
 | `COOLDOWN_AFTER_ALERT_MINUTES` | `10` | Espera antes de poder alertar de novo |
 | `WEBCAM_INDEX` | `0` | Índice da webcam (0 = padrão) |
 | `ENABLE_HAND_ON_HEAD` | `True` | Liga o alerta de "mão na cabeça" (requer mediapipe) |
+| `HAND_ON_HEAD_CONFIRM_SECONDS` | `4` | Confirma que a mão continua lá antes de avisar (filtra coçada rápida) |
 | `HAND_ON_HEAD_COOLDOWN_SECONDS` | `60` | Espera entre alertas de "mão na cabeça" |
 | `DETECTOR` | `"haar"` | Backend de detecção: `"haar"` (leve) ou `"yolo"` |
 | `YOLO_MODEL` | `yolov8n.pt` | Modelo usado quando `DETECTOR = "yolo"` |

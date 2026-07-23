@@ -42,6 +42,35 @@ def _format_duration(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d}"
 
 
+def _confirm_hand_on_head(cap, hand_detector) -> bool:
+    """Re-checa se a mão CONTINUA na cabeça durante a janela de confirmação.
+
+    Amostra a webcam a cada 1s por `HAND_ON_HEAD_CONFIRM_SECONDS`. Retorna
+    True só se a mão estiver presente em TODAS as amostras (gesto sustentado).
+    Assim que a mão sumir uma vez, retorna False (foi passageiro — coçada
+    rápida, ajeitar óculos, etc.).
+    """
+    seconds = config.HAND_ON_HEAD_CONFIRM_SECONDS
+    if seconds <= 0:
+        return True
+
+    print(
+        f"{_timestamp()} Mão na cabeça detectada — confirmando por "
+        f"{seconds}s (a mão continua lá?)..."
+    )
+    deadline = _now() + seconds
+    samples = 0
+    while _now() < deadline:
+        time.sleep(1.0)
+        ok, frame = cap.read()
+        if not ok or frame is None:
+            continue
+        samples += 1
+        if not hand_detector.detect(frame):
+            return False  # a mão saiu → gesto passageiro
+    return samples > 0
+
+
 def main() -> None:
     alert_after_seconds = config.ALERT_AFTER_MINUTES * 60
     cooldown_seconds = config.COOLDOWN_AFTER_ALERT_MINUTES * 60
@@ -115,18 +144,23 @@ def main() -> None:
             if hand_detector is not None:
                 try:
                     if hand_detector.detect(frame):
-                        if now >= hand_cooldown_until:
+                        if now < hand_cooldown_until:
                             print(
-                                f"{_timestamp()} >>> MÃO NA CABEÇA detectada! "
+                                f"{_timestamp()} Mão na cabeça (em cooldown)"
+                            )
+                        elif _confirm_hand_on_head(cap, hand_detector):
+                            print(
+                                f"{_timestamp()} >>> MÃO NA CABEÇA confirmada! "
                                 f"Notificando."
                             )
                             send_hand_on_head_alert()
                             hand_cooldown_until = (
-                                now + config.HAND_ON_HEAD_COOLDOWN_SECONDS
+                                _now() + config.HAND_ON_HEAD_COOLDOWN_SECONDS
                             )
                         else:
                             print(
-                                f"{_timestamp()} Mão na cabeça (em cooldown)"
+                                f"{_timestamp()} Mão na cabeça passageira "
+                                f"(coçada rápida) — ignorado."
                             )
                 except Exception as exc:
                     print(f"{_timestamp()} Erro na detecção de gesto: {exc}")
