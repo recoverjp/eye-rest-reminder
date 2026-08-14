@@ -41,6 +41,15 @@ ou upload de qualquer tipo.
 - 💧 **Lembrete de água:** a cada **1 hora** de presença na tela, também avisa
   para você beber água (por tempo, não por detecção). Se você sair por um
   tempo, o timer reinicia.
+- 🔎 **Perto demais da tela:** avisa se o seu rosto fica grande demais no quadro
+  (você se aproximou muito da tela) por alguns segundos.
+- 👁️ **Pisque mais (olho seco):** a cada poucos minutos, mede sua **frequência
+  de piscadas** por ~15 s; se você estiver piscando pouco (staring), lembra de
+  piscar.
+- 🧍 **Postura:** avisa se você **curvar/afundar** por um tempo. Precisa
+  **calibrar** antes (menu da bandeja → *Calibrar postura*, sentado reto).
+- 📊 **Resumo do dia:** pelo menu da bandeja, veja tempo de tela e quantos
+  avisos de cada tipo aconteceram hoje.
 
 ### 🖐️ Bônus: alerta de "mão na cabeça" (opcional)
 
@@ -160,8 +169,11 @@ de olho** na bandeja do Windows (perto do relógio — pode estar atrás da seti
 **^** de ícones ocultos). **Clique com o botão direito** nele para:
 
 - ✅ **Ligar/desligar cada recurso** em tempo real (descanso dos olhos, mão na
-  cabeça, olhos fechados = descanso, lembrete de água) — as escolhas ficam
-  salvas em `settings.json`.
+  cabeça, olhos fechados = descanso, lembrete de água, perto demais, piscar,
+  postura) — as escolhas ficam salvas em `settings.json`.
+- 🧍 **Calibrar postura (sente reto)** — salva sua postura de referência para o
+  aviso de postura funcionar.
+- 📊 **Resumo do dia** — mostra tempo de tela e contagem de avisos de hoje.
 - **Sair** — encerra o app de forma limpa (não precisa mais do Gerenciador de
   Tarefas).
 
@@ -180,6 +192,14 @@ Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
 | `RESET_AFTER_SECONDS` | `120` | Segundos sem rosto para zerar o contador |
 | `ENABLE_WATER_REMINDER` | `True` | Liga o lembrete de beber água |
 | `WATER_REMINDER_MINUTES` | `60` | Minutos de presença até lembrar de beber água |
+| `ENABLE_SCREEN_DISTANCE` | `True` | Liga o aviso de "perto demais da tela" |
+| `FACE_TOO_CLOSE_RATIO` | `0.45` | Largura do rosto/quadro acima da qual = perto demais |
+| `ENABLE_BLINK_REMINDER` | `True` | Liga o lembrete de piscar |
+| `BLINK_CHECK_MINUTES` | `5` | A cada quantos min medir a taxa de piscadas |
+| `BLINK_RATE_MIN` | `8` | Piscadas/min abaixo disso = lembrar de piscar |
+| `ENABLE_POSTURE` | `True` | Liga o aviso de postura (requer calibrar) |
+| `POSTURE_SHRINK_TOLERANCE` | `0.22` | Quanto o "pescoço" pode encolher antes de avisar |
+| `ENABLE_DAILY_SUMMARY` | `True` | Resumo do dia disponível no menu da bandeja |
 | `ENABLE_EYES_CLOSED_REST` | `True` | Trata olhos fechados por um tempo como descanso |
 | `EYES_CLOSED_REST_SECONDS` | `30` | Segundos de olhos fechados que contam como descanso |
 | `EYE_CLOSED_THRESHOLD` | `0.45` | Limiar do blendshape para considerar o olho fechado |
@@ -204,6 +224,7 @@ eye-rest-reminder/
   tray.py                  ← ícone da bandeja + menu (ponto de entrada)
   main.py                  ← loop principal de monitoramento
   settings.py              ← toggles ligados/desligados (salvos em settings.json)
+  stats.py                 ← estatísticas do dia (resumo)
   detector.py              ← detecção de rosto (Haar) ou pessoa (YOLO)
   gesture.py               ← detecção de "mão na cabeça" (MediaPipe)
   eyes.py                  ← detecção de "olhos fechados" (MediaPipe)

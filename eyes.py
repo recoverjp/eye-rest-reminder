@@ -67,8 +67,16 @@ class EyeStateDetector:
         )
         self.landmarker = mp_vision.FaceLandmarker.create_from_options(options)
 
-    def blink_scores(self, frame):
-        """Retorna (left, right) dos blendshapes de piscar, ou None se sem rosto."""
+    def analyze(self, frame):
+        """Roda o Face Landmarker uma vez e retorna um dict com métricas:
+
+            {"present": bool,           # há rosto?
+             "blink": float,            # média eyeBlink (0 aberto … ~1 fechado)
+             "eyes_closed": bool,       # ambos os olhos fechados
+             "face_width": float}       # largura do rosto / largura do quadro
+
+        Retorna {"present": False, ...} se não houver rosto.
+        """
         import cv2
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -76,8 +84,9 @@ class EyeStateDetector:
             image_format=self._mp.ImageFormat.SRGB, data=rgb
         )
         result = self.landmarker.detect(mp_image)
-        if not result.face_blendshapes:
-            return None
+        if not result.face_blendshapes or not result.face_landmarks:
+            return {"present": False, "blink": 0.0,
+                    "eyes_closed": False, "face_width": 0.0}
 
         left = right = 0.0
         for cat in result.face_blendshapes[0]:
@@ -85,12 +94,24 @@ class EyeStateDetector:
                 left = cat.score
             elif cat.category_name == BLINK_RIGHT:
                 right = cat.score
-        return left, right
+        blink = (left + right) / 2.0
+
+        xs = [p.x for p in result.face_landmarks[0]]
+        face_width = max(xs) - min(xs)  # já normalizado (0–1)
+
+        return {
+            "present": True,
+            "blink": blink,
+            "eyes_closed": left >= self.threshold and right >= self.threshold,
+            "face_width": face_width,
+        }
+
+    def blink_scores(self, frame):
+        """Retorna (left, right) dos blendshapes de piscar, ou None se sem rosto."""
+        m = self.analyze(frame)
+        return None if not m["present"] else (m["blink"], m["blink"])
 
     def eyes_closed(self, frame):
-        """True se ambos os olhos estão fechados; False se abertos; None se sem rosto."""
-        scores = self.blink_scores(frame)
-        if scores is None:
-            return None
-        left, right = scores
-        return left >= self.threshold and right >= self.threshold
+        """True se ambos os olhos fechados; False se abertos; None se sem rosto."""
+        m = self.analyze(frame)
+        return None if not m["present"] else m["eyes_closed"]

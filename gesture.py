@@ -26,6 +26,7 @@ import config
 
 # Índices dos landmarks do Pose (padrão MediaPipe, 33 pontos).
 NOSE = 0
+LEFT_EYE, RIGHT_EYE = 2, 5
 LEFT_EAR, RIGHT_EAR = 7, 8
 LEFT_SHOULDER, RIGHT_SHOULDER = 11, 12
 LEFT_WRIST, RIGHT_WRIST = 15, 16
@@ -96,8 +97,8 @@ class HandOnHeadDetector:
         )
         self.landmarker = mp_vision.PoseLandmarker.create_from_options(options)
 
-    def detect(self, frame) -> bool:
-        """Retorna True se detectar uma mão próxima à cabeça no frame (BGR)."""
+    def _landmarks(self, frame):
+        """Roda o Pose e retorna a lista de landmarks (ou None se sem pessoa)."""
         import cv2
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -106,9 +107,38 @@ class HandOnHeadDetector:
         )
         result = self.landmarker.detect(mp_image)
         if not result.pose_landmarks:
-            return False
+            return None
+        return result.pose_landmarks[0]
 
-        lm = result.pose_landmarks[0]  # primeira (e única) pose
+    def neck_gap(self, frame):
+        """Distância vertical olhos→ombros normalizada pela largura da cabeça.
+
+        Serve de proxy de postura: sentado reto o "pescoço" é longo (gap
+        grande); curvado/afundado a cabeça desce e o gap encolhe. Retorna None
+        se não houver pessoa/landmarks confiáveis.
+        """
+        lm = self._landmarks(frame)
+        if lm is None:
+            return None
+        left_ear, right_ear = lm[LEFT_EAR], lm[RIGHT_EAR]
+        left_sh, right_sh = lm[LEFT_SHOULDER], lm[RIGHT_SHOULDER]
+        if (left_ear.visibility <= MIN_VISIBILITY
+                or right_ear.visibility <= MIN_VISIBILITY
+                or left_sh.visibility <= MIN_VISIBILITY
+                or right_sh.visibility <= MIN_VISIBILITY):
+            return None
+        head_size = _dist(left_ear, right_ear)
+        if head_size <= 0.01:
+            return None
+        eye_y = (lm[LEFT_EYE].y + lm[RIGHT_EYE].y) / 2.0
+        sh_y = (left_sh.y + right_sh.y) / 2.0
+        return (sh_y - eye_y) / head_size
+
+    def detect(self, frame) -> bool:
+        """Retorna True se detectar uma mão próxima à cabeça no frame (BGR)."""
+        lm = self._landmarks(frame)
+        if lm is None:
+            return False
 
         nose = lm[NOSE]
         left_ear, right_ear = lm[LEFT_EAR], lm[RIGHT_EAR]

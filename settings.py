@@ -19,9 +19,14 @@ FEATURES = [
     ("hand_on_head", "Alerta de mão na cabeça", config.ENABLE_HAND_ON_HEAD),
     ("eyes_closed_rest", "Olhos fechados = descanso", config.ENABLE_EYES_CLOSED_REST),
     ("water", "Lembrete de água", config.ENABLE_WATER_REMINDER),
+    ("screen_distance", "Aviso de tela perto demais", config.ENABLE_SCREEN_DISTANCE),
+    ("blink", "Lembrete de piscar", config.ENABLE_BLINK_REMINDER),
+    ("posture", "Aviso de postura", config.ENABLE_POSTURE),
 ]
 
 _DEFAULTS = {key: default for key, _label, default in FEATURES}
+# Valores não-booleanos persistidos junto (ex.: calibração de postura).
+_DEFAULTS["posture_baseline"] = None
 
 
 class Settings:
@@ -33,13 +38,17 @@ class Settings:
         self.load()
 
     def load(self) -> None:
+        toggle_keys = {key for key, _l, _d in FEATURES}
         try:
             with open(_PATH, encoding="utf-8") as f:
                 disk = json.load(f)
             with self._lock:
                 for key in _DEFAULTS:
                     if key in disk:
-                        self._data[key] = bool(disk[key])
+                        # toggles são booleanos; o resto (ex.: baseline) é cru.
+                        self._data[key] = (
+                            bool(disk[key]) if key in toggle_keys else disk[key]
+                        )
         except FileNotFoundError:
             self.save()  # cria o arquivo na primeira vez
         except Exception:
@@ -66,3 +75,13 @@ class Settings:
     def toggle(self, key: str) -> bool:
         self.set(key, not self.get(key))
         return self.get(key)
+
+    # --- valores não-booleanos (ex.: calibração de postura) ---
+    def get_value(self, key: str, default=None):
+        with self._lock:
+            return self._data.get(key, default)
+
+    def set_value(self, key: str, value) -> None:
+        with self._lock:
+            self._data[key] = value
+        self.save()

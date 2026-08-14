@@ -14,7 +14,9 @@ from PIL import Image, ImageDraw
 from pystray import Menu, MenuItem
 
 import main
+from notifier import notify
 from settings import Settings, FEATURES
+from stats import DailyStats
 
 
 def _make_icon_image() -> Image.Image:
@@ -31,12 +33,16 @@ def _make_icon_image() -> Image.Image:
 
 def run_tray() -> None:
     settings = Settings()
+    stats = DailyStats()
     stop_event = threading.Event()
+    calibrate_posture = threading.Event()
 
     # Monitoramento roda numa thread; o ícone fica na thread principal (exigência
     # do pystray no Windows).
     worker = threading.Thread(
-        target=main.run, args=(settings, stop_event), daemon=True
+        target=main.run,
+        args=(settings, stop_event, stats, calibrate_posture),
+        daemon=True,
     )
     worker.start()
 
@@ -47,6 +53,15 @@ def run_tray() -> None:
             checked=lambda item: settings.get(key),
         )
 
+    def on_summary(icon, item):
+        notify("Resumo do dia 📊", stats.summary())
+
+    def on_calibrate(icon, item):
+        calibrate_posture.set()
+        notify("Calibrar postura 🧍",
+               "Sente reto e olhe para a tela — vou salvar sua postura de "
+               "referência nos próximos segundos.")
+
     def on_quit(icon, item):
         stop_event.set()
         icon.stop()
@@ -55,6 +70,9 @@ def run_tray() -> None:
         MenuItem("eye-rest-reminder", None, enabled=False),
         Menu.SEPARATOR,
         *[make_toggle(key, label) for key, label, _default in FEATURES],
+        Menu.SEPARATOR,
+        MenuItem("Calibrar postura (sente reto)", on_calibrate),
+        MenuItem("Resumo do dia", on_summary),
         Menu.SEPARATOR,
         MenuItem("Sair", on_quit),
     )

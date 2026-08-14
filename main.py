@@ -21,7 +21,9 @@ try:
 except Exception:
     pass
 from detector import create_detector
-from notifier import send_alert, send_hand_on_head_alert, send_water_reminder
+from notifier import (
+    notify, send_alert, send_hand_on_head_alert, send_water_reminder,
+)
 
 
 def _now() -> float:
@@ -78,6 +80,38 @@ def _confirm_hand_on_head(cap, hand_detector) -> bool:
     return samples > 0 and positives >= needed
 
 
+def _measure_blink_rate(cap, eye_detector):
+    """Mede a taxa de piscadas (por minuto) observando a webcam por um tempo.
+
+    Precisa de frames contínuos (uma piscada dura ~0,3s), então segura a câmera
+    por `BLINK_MEASURE_SECONDS`. Retorna piscadas/min, ou None se sem rosto.
+    """
+    seconds = config.BLINK_MEASURE_SECONDS
+    print(f"{_timestamp()} Medindo piscadas por {seconds}s...")
+    deadline = _now() + seconds
+    blinks = 0
+    frames = 0
+    was_closed = False
+    while _now() < deadline:
+        ok, frame = cap.read()
+        if not ok or frame is None:
+            continue
+        try:
+            m = eye_detector.analyze(frame)
+        except Exception:
+            continue
+        if not m["present"]:
+            continue
+        frames += 1
+        closed = m["blink"] >= config.BLINK_EDGE_THRESHOLD
+        if closed and not was_closed:
+            blinks += 1  # borda de subida = uma piscada
+        was_closed = closed
+    if frames < 5:
+        return None
+    return blinks * 60.0 / seconds
+
+
 def _sleep_remaining(loop_start: float) -> None:
     """Dorme o restante do intervalo, descontando o tempo já gasto no ciclo."""
     sleep_time = config.FRAME_INTERVAL_SECONDS - (_now() - loop_start)
@@ -111,17 +145,24 @@ def _open_camera():
     return cap
 
 
-def run(settings=None, stop_event=None) -> None:
+def run(settings=None, stop_event=None, stats=None, calibrate_posture=None) -> None:
     """Loop principal de monitoramento.
 
     `settings` (opcional) é um `settings.Settings` cujos toggles são lidos a
     cada ciclo — permite ligar/desligar recursos em tempo real (ex.: pelo menu
     da bandeja). Sem ele, tudo segue os valores de `config.py`.
     `stop_event` (opcional) é um `threading.Event` para encerrar o loop.
+    `stats` (opcional) é um `stats.DailyStats` para o resumo do dia.
     """
     if settings is None:
         from settings import Settings
         settings = Settings()
+    if stats is None:
+        from stats import DailyStats
+        stats = DailyStats()
+
+    def bump(key):
+        stats.incr(key)
 
     def enabled(key, config_fallback):
         return settings.get(key) if settings is not None else config_fallback
@@ -173,6 +214,11 @@ def run(settings=None, stop_event=None) -> None:
     hand_cooldown_until = 0.0  # cooldown do alerta de "mão na cabeça"
     eyes_closed_since = None    # instante em que os olhos começaram fechados
     water_start = None          # início da contagem do lembrete de água
+    too_close_since = None      # início do "perto demais" contínuo
+    screen_cooldown_until = 0.0
+    posture_bad_since = None    # início da postura ruim contínua
+    posture_cooldown_until = 0.0
+    last_blink_check = _now()   # última medição de piscadas
 
     cap = None
     try:
@@ -214,6 +260,7 @@ def run(settings=None, stop_event=None) -> None:
                                 f"Notificando."
                             )
                             send_hand_on_head_alert()
+                            bump("hand_on_head")
                             hand_cooldown_until = (
                                 _now() + config.HAND_ON_HEAD_COOLDOWN_SECONDS
                             )
@@ -235,17 +282,87 @@ def run(settings=None, stop_event=None) -> None:
                         f"({config.WATER_REMINDER_MINUTES} min sem beber)"
                     )
                     send_water_reminder()
+                    bump("water")
                     water_start = now  # reinicia o intervalo
 
-            # Estado dos olhos (fechado/aberto), se o detector estiver ativo
-            # e o recurso ligado.
-            eyes_closed = None
-            if (face_present and eye_detector is not None
-                    and enabled("eyes_closed_rest", config.ENABLE_EYES_CLOSED_REST)):
+            # Tempo de tela (para o resumo do dia).
+            if face_present:
+                stats.add_present(config.FRAME_INTERVAL_SECONDS)
+
+            # Análise facial (UMA inferência): olhos + largura do rosto.
+            face_metrics = None
+            if face_present and eye_detector is not None:
                 try:
-                    eyes_closed = eye_detector.eyes_closed(frame)
+                    face_metrics = eye_detector.analyze(frame)
                 except Exception as exc:
-                    print(f"{_timestamp()} Erro na detecção de olhos: {exc}")
+                    print(f"{_timestamp()} Erro na análise facial: {exc}")
+
+            # ----- Perto demais da tela -----
+            if (enabled("screen_distance", config.ENABLE_SCREEN_DISTANCE)
+                    and face_metrics and face_metrics["present"]):
+                if face_metrics["face_width"] >= config.FACE_TOO_CLOSE_RATIO:
+                    if too_close_since is None:
+                        too_close_since = now
+                    if (now - too_close_since >= config.SCREEN_TOO_CLOSE_SECONDS
+                            and now >= screen_cooldown_until):
+                        print(f"{_timestamp()} >>> PERTO DEMAIS da tela! Notificando.")
+                        notify(config.SCREEN_DISTANCE_TITLE,
+                               config.SCREEN_DISTANCE_MESSAGE)
+                        bump("screen_distance")
+                        screen_cooldown_until = (
+                            now + config.SCREEN_DISTANCE_COOLDOWN_SECONDS
+                        )
+                else:
+                    too_close_since = None
+            else:
+                too_close_since = None
+
+            # ----- Calibração de postura (acionada pelo menu da bandeja) -----
+            if (calibrate_posture is not None and calibrate_posture.is_set()
+                    and hand_detector is not None and face_present):
+                try:
+                    gap = hand_detector.neck_gap(frame)
+                except Exception:
+                    gap = None
+                if gap is not None:
+                    settings.set_value("posture_baseline", gap)
+                    posture_bad_since = None
+                    posture_cooldown_until = 0.0
+                    print(f"{_timestamp()} Postura calibrada (baseline={gap:.2f}).")
+                    notify("Postura calibrada 🧍",
+                           "Postura de referência salva! Vou avisar se você curvar.")
+                    calibrate_posture.clear()
+
+            # ----- Postura (requer calibração pelo menu da bandeja) -----
+            baseline = settings.get_value("posture_baseline")
+            if (enabled("posture", config.ENABLE_POSTURE)
+                    and hand_detector is not None and face_present and baseline):
+                try:
+                    gap = hand_detector.neck_gap(frame)
+                except Exception:
+                    gap = None
+                limite = baseline * (1 - config.POSTURE_SHRINK_TOLERANCE)
+                if gap is not None and gap < limite:
+                    if posture_bad_since is None:
+                        posture_bad_since = now
+                    if (now - posture_bad_since >= config.POSTURE_BAD_SECONDS
+                            and now >= posture_cooldown_until):
+                        print(f"{_timestamp()} >>> POSTURA ruim! Notificando.")
+                        notify(config.POSTURE_TITLE, config.POSTURE_MESSAGE)
+                        bump("posture")
+                        posture_cooldown_until = (
+                            now + config.POSTURE_COOLDOWN_SECONDS
+                        )
+                else:
+                    posture_bad_since = None
+            else:
+                posture_bad_since = None
+
+            # Estado dos olhos (fechado/aberto) para o descanso.
+            eyes_closed = None
+            if (face_present and face_metrics is not None
+                    and enabled("eyes_closed_rest", config.ENABLE_EYES_CLOSED_REST)):
+                eyes_closed = face_metrics["eyes_closed"]
 
             if face_present and eyes_closed:
                 # Olhos fechados: possível descanso — não conta tempo de tela.
@@ -297,6 +414,7 @@ def run(settings=None, stop_event=None) -> None:
                         f"Descanse os olhos!"
                     )
                     send_alert()
+                    bump("eye_rest")
                     # Aguarda o cooldown antes de poder disparar de novo.
                     cooldown_until = now + cooldown_seconds
             else:
@@ -323,6 +441,18 @@ def run(settings=None, stop_event=None) -> None:
                         f"{_timestamp()} Sem rosto detectado — "
                         f"contador pausado"
                     )
+
+            # ----- Pisque mais: medição periódica da taxa de piscadas -----
+            if (enabled("blink", config.ENABLE_BLINK_REMINDER)
+                    and eye_detector is not None and face_present
+                    and _now() - last_blink_check >= config.BLINK_CHECK_MINUTES * 60):
+                rate = _measure_blink_rate(cap, eye_detector)
+                last_blink_check = _now()
+                if rate is not None:
+                    print(f"{_timestamp()} Taxa de piscadas: {rate:.1f}/min")
+                    if rate < config.BLINK_RATE_MIN:
+                        notify(config.BLINK_TITLE, config.BLINK_MESSAGE)
+                        bump("blink")
 
             # Libera a câmera para outros apps usarem entre as checagens.
             cap.release()

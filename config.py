@@ -102,6 +102,56 @@ EYES_CLOSED_REST_SECONDS = 30
 EYE_CLOSED_THRESHOLD = 0.45
 
 # ---------------------------------------------------------------------------
+# "Perto demais da tela"
+# ---------------------------------------------------------------------------
+
+ENABLE_SCREEN_DISTANCE = True
+# Fração da largura do quadro ocupada pelo rosto acima da qual = perto demais.
+# (Calibrável — quanto maior o rosto no quadro, mais perto você está.)
+FACE_TOO_CLOSE_RATIO = 0.45
+# Segundos contínuos perto demais antes de avisar (evita avisos por um movimento).
+SCREEN_TOO_CLOSE_SECONDS = 15
+SCREEN_DISTANCE_COOLDOWN_SECONDS = 300
+SCREEN_DISTANCE_TITLE = "Perto demais da tela 🔎"
+SCREEN_DISTANCE_MESSAGE = "🔎 Você está muito perto da tela. Afaste-se um pouco!"
+
+# ---------------------------------------------------------------------------
+# "Pisque mais" (olho seco) — mede a frequência de piscadas
+# ---------------------------------------------------------------------------
+
+ENABLE_BLINK_REMINDER = True
+# A cada quantos minutos medir a taxa de piscadas.
+BLINK_CHECK_MINUTES = 5
+# Duração da medição, em segundos (segura a câmera nesse período).
+BLINK_MEASURE_SECONDS = 15
+# Piscadas por minuto abaixo disso = lembrar de piscar.
+BLINK_RATE_MIN = 8
+# Valor do blendshape eyeBlink acima do qual o olho é considerado fechado.
+BLINK_EDGE_THRESHOLD = 0.45
+BLINK_TITLE = "Pisque mais 👁️"
+BLINK_MESSAGE = "👁️ Você está piscando pouco. Pisque algumas vezes para lubrificar os olhos!"
+
+# ---------------------------------------------------------------------------
+# Postura (requer calibração pelo menu da bandeja)
+# ---------------------------------------------------------------------------
+
+ENABLE_POSTURE = True
+# Segundos contínuos curvado antes de avisar.
+POSTURE_BAD_SECONDS = 20
+POSTURE_COOLDOWN_SECONDS = 300
+# Quanto o "pescoço" (distância olhos→ombros) pode encolher em relação à sua
+# postura calibrada antes de considerar "curvado". 0.25 = 25% menor.
+POSTURE_SHRINK_TOLERANCE = 0.22
+POSTURE_TITLE = "Postura 🧍"
+POSTURE_MESSAGE = "🧍 Você está curvando/afundando. Endireite a postura!"
+
+# ---------------------------------------------------------------------------
+# Resumo do dia
+# ---------------------------------------------------------------------------
+
+ENABLE_DAILY_SUMMARY = True
+
+# ---------------------------------------------------------------------------
 # Configurações de alerta
 # ---------------------------------------------------------------------------
 
