@@ -2,6 +2,8 @@
 # Nota: fixado em 4.x — o opencv 5.0 (pré-release) não inclui o
 # CascadeClassifier necessário para o Haar.
 opencv-python>=4.8,<5
+# Ícone na bandeja do sistema com menu de recursos (systray).
+pystray>=0.19
 # Notificações nativas WinRT (não deixam ícone acumulado na bandeja).
 windows-toasts>=1.1
 # Fallbacks de notificação (usados só se windows-toasts falhar).

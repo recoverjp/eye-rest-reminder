@@ -153,6 +153,23 @@ Quando o alerta dispara, você recebe:
 
 ---
 
+## 🎛️ Controle pela bandeja do sistema
+
+Ao iniciar (pelo `iniciar-silencioso.vbs` ou `iniciar.bat`), aparece um **ícone
+de olho** na bandeja do Windows (perto do relógio — pode estar atrás da setinha
+**^** de ícones ocultos). **Clique com o botão direito** nele para:
+
+- ✅ **Ligar/desligar cada recurso** em tempo real (descanso dos olhos, mão na
+  cabeça, olhos fechados = descanso, lembrete de água) — as escolhas ficam
+  salvas em `settings.json`.
+- **Sair** — encerra o app de forma limpa (não precisa mais do Gerenciador de
+  Tarefas).
+
+> Os *tempos* (1h, 30s, etc.) continuam em [config.py](config.py); o menu da
+> bandeja controla o que fica **ligado/desligado**.
+
+---
+
 ## Configuração
 
 Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
@@ -184,12 +201,14 @@ Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
 
 ```
 eye-rest-reminder/
-  main.py                  ← loop principal
+  tray.py                  ← ícone da bandeja + menu (ponto de entrada)
+  main.py                  ← loop principal de monitoramento
+  settings.py              ← toggles ligados/desligados (salvos em settings.json)
   detector.py              ← detecção de rosto (Haar) ou pessoa (YOLO)
   gesture.py               ← detecção de "mão na cabeça" (MediaPipe)
   eyes.py                  ← detecção de "olhos fechados" (MediaPipe)
   notifier.py              ← notificação Windows + som
-  config.py                ← constantes configuráveis
+  config.py                ← constantes configuráveis (tempos)
   test_smoke.py            ← teste rápido de webcam + detector
   iniciar.bat              ← atalho: inicia mostrando o log
   iniciar-silencioso.vbs   ← atalho: inicia em segundo plano (sem janela)
@@ -202,10 +221,11 @@ eye-rest-reminder/
 ## Atalhos de inicialização
 
 - **[iniciar.bat](iniciar.bat)** — duplo clique abre uma janela com o **log em
-  tempo real**. Para parar, feche a janela ou `Ctrl+C`.
+  tempo real** (e o ícone na bandeja). Para parar: menu da bandeja → **Sair**,
+  ou feche a janela.
 - **[iniciar-silencioso.vbs](iniciar-silencioso.vbs)** — duplo clique inicia em
-  **segundo plano, sem janela** (via `pythonw`). Para parar: Gerenciador de
-  Tarefas (`Ctrl+Shift+Esc`) → aba **Detalhes** → finalizar `pythonw.exe`.
+  **segundo plano, sem janela** (via `pythonw`), com o ícone na bandeja. Para
+  parar: menu da bandeja → **Sair**.
 
 ### Iniciar junto com o Windows (opcional)
 

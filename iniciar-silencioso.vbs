@@ -19,5 +19,6 @@ shell.CurrentDirectory = scriptDir
 ' Usa "pythonw.exe" resolvido pelo PATH do sistema (funciona em qualquer
 ' máquina onde o Python esteja instalado e no PATH). "pythonw" roda o Python
 ' sem abrir console.
+' Roda o tray.py: mostra o ícone na bandeja (sem console) e o menu de recursos.
 ' 0 = janela oculta ; False = não espera o processo terminar.
-shell.Run "pythonw.exe main.py", 0, False
+shell.Run "pythonw.exe tray.py", 0, False

@@ -13,7 +13,8 @@ REM Vai para a pasta onde este .bat esta, independente de onde foi chamado.
 cd /d "%~dp0"
 
 title eye-rest-reminder
-python main.py
+REM tray.py mostra o icone na bandeja + o log aqui. (main.py roda sem bandeja.)
+python tray.py
 
 REM Se o programa terminar por erro, mantem a janela aberta para ler a mensagem.
 echo.

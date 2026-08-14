@@ -11,6 +11,9 @@ venv/
 env/
 ENV/
 
+# --- Estado local do usuário (toggles da bandeja) ---
+settings.json
+
 # --- Modelos baixados sob demanda (não versionar) ---
 *.pt
 *.task

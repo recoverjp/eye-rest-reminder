@@ -111,7 +111,24 @@ def _open_camera():
     return cap
 
 
-def main() -> None:
+def run(settings=None, stop_event=None) -> None:
+    """Loop principal de monitoramento.
+
+    `settings` (opcional) é um `settings.Settings` cujos toggles são lidos a
+    cada ciclo — permite ligar/desligar recursos em tempo real (ex.: pelo menu
+    da bandeja). Sem ele, tudo segue os valores de `config.py`.
+    `stop_event` (opcional) é um `threading.Event` para encerrar o loop.
+    """
+    if settings is None:
+        from settings import Settings
+        settings = Settings()
+
+    def enabled(key, config_fallback):
+        return settings.get(key) if settings is not None else config_fallback
+
+    def stopping():
+        return stop_event is not None and stop_event.is_set()
+
     alert_after_seconds = config.ALERT_AFTER_MINUTES * 60
     cooldown_seconds = config.COOLDOWN_AFTER_ALERT_MINUTES * 60
     water_interval_seconds = config.WATER_REMINDER_MINUTES * 60
@@ -126,36 +143,23 @@ def main() -> None:
 
     detector = create_detector()
 
-    # Detector opcional de "mão na cabeça". Se o mediapipe não estiver
-    # instalado (ou falhar), apenas desativa o recurso — não derruba a app.
+    # Carregamos os detectores opcionais no início (se o mediapipe existir),
+    # independente do toggle — assim dá para ligar/desligar em tempo real sem
+    # recarregar modelo. O uso a cada ciclo é gated pelos toggles.
     hand_detector = None
-    if config.ENABLE_HAND_ON_HEAD:
-        try:
-            from gesture import HandOnHeadDetector
-            print("Carregando detector de 'mão na cabeça' (mediapipe)...")
-            hand_detector = HandOnHeadDetector()
-            print(
-                f"  Ativo. Cooldown de "
-                f"{config.HAND_ON_HEAD_COOLDOWN_SECONDS}s entre alertas."
-            )
-        except Exception as exc:
-            print(f"  AVISO: 'mão na cabeça' desativado — {exc}")
-            hand_detector = None
-
-    # Detector opcional de "olhos fechados" (para tratar como descanso).
     eye_detector = None
-    if config.ENABLE_EYES_CLOSED_REST:
-        try:
-            from eyes import EyeStateDetector
-            print("Carregando detector de 'olhos fechados' (mediapipe)...")
-            eye_detector = EyeStateDetector()
-            print(
-                f"  Ativo. Olhos fechados por "
-                f"{config.EYES_CLOSED_REST_SECONDS}s contam como descanso."
-            )
-        except Exception as exc:
-            print(f"  AVISO: 'olhos fechados' desativado — {exc}")
-            eye_detector = None
+    try:
+        from gesture import HandOnHeadDetector
+        print("Carregando detector de 'mão na cabeça' (mediapipe)...")
+        hand_detector = HandOnHeadDetector()
+    except Exception as exc:
+        print(f"  AVISO: 'mão na cabeça' indisponível — {exc}")
+    try:
+        from eyes import EyeStateDetector
+        print("Carregando detector de 'olhos fechados' (mediapipe)...")
+        eye_detector = EyeStateDetector()
+    except Exception as exc:
+        print(f"  AVISO: 'olhos fechados' indisponível — {exc}")
 
     print(
         f"Monitorando (checa a cada {int(config.FRAME_INTERVAL_SECONDS)}s e "
@@ -172,7 +176,7 @@ def main() -> None:
 
     cap = None
     try:
-        while True:
+        while not stopping():
             loop_start = _now()
 
             # Abre a câmera só para esta checagem e libera logo depois, para
@@ -197,7 +201,7 @@ def main() -> None:
             now = _now()
 
             # ----- Detecção opcional de "mão na cabeça" -----
-            if hand_detector is not None:
+            if hand_detector is not None and enabled("hand_on_head", config.ENABLE_HAND_ON_HEAD):
                 try:
                     if hand_detector.detect(frame):
                         if now < hand_cooldown_until:
@@ -222,7 +226,7 @@ def main() -> None:
                     print(f"{_timestamp()} Erro na detecção de gesto: {exc}")
 
             # ----- Lembrete de água (por tempo de presença) -----
-            if config.ENABLE_WATER_REMINDER and face_present:
+            if enabled("water", config.ENABLE_WATER_REMINDER) and face_present:
                 if water_start is None:
                     water_start = now
                 elif now - water_start >= water_interval_seconds:
@@ -233,9 +237,11 @@ def main() -> None:
                     send_water_reminder()
                     water_start = now  # reinicia o intervalo
 
-            # Estado dos olhos (fechado/aberto), se o detector estiver ativo.
+            # Estado dos olhos (fechado/aberto), se o detector estiver ativo
+            # e o recurso ligado.
             eyes_closed = None
-            if face_present and eye_detector is not None:
+            if (face_present and eye_detector is not None
+                    and enabled("eyes_closed_rest", config.ENABLE_EYES_CLOSED_REST)):
                 try:
                     eyes_closed = eye_detector.eyes_closed(frame)
                 except Exception as exc:
@@ -282,7 +288,9 @@ def main() -> None:
                     f"{_format_duration(continuous)} contínuos"
                 )
 
-                if continuous >= alert_after_seconds and now >= cooldown_until:
+                if (enabled("eye_rest", True)
+                        and continuous >= alert_after_seconds
+                        and now >= cooldown_until):
                     print(
                         f"{_timestamp()} >>> ALERTA! "
                         f"{config.ALERT_AFTER_MINUTES} min contínuos atingidos. "
@@ -326,6 +334,11 @@ def main() -> None:
     finally:
         if cap is not None:
             cap.release()
+
+
+def main() -> None:
+    """Executa o monitoramento standalone (sem bandeja), usando settings.json."""
+    run()
 
 
 if __name__ == "__main__":
