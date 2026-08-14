@@ -28,6 +28,10 @@ ou upload de qualquer tipo.
 ## Como funciona
 
 - Captura um frame da webcam a cada 10 segundos (ajustável).
+- **Não trava a câmera:** abre a webcam só por um instante a cada checagem e
+  **libera em seguida**, então outros apps (Google Meet, Zoom…) podem usar a
+  câmera normalmente — nesses momentos o app apenas pula a checagem. (Efeito
+  colateral: o LED da webcam pisca brevemente a cada checagem.)
 - Detecta se há um **rosto** no frame.
 - Conta o tempo **contínuo** em que você está detectado.
 - Ao atingir **60 minutos contínuos** → dispara o alerta.
@@ -139,7 +143,8 @@ O terminal exibe o status a cada verificação (a cada 10 s por padrão):
 
 Quando o alerta dispara, você recebe:
 
-- 🔔 **Notificação popup** do Windows.
+- 🔔 **Notificação popup** do Windows (via `windows-toasts` / WinRT — aparece na
+  Central de Ações **sem** deixar ícone acumulado na bandeja do sistema).
 - 🔊 **Som de alerta** (beep, ou um `.wav` se você configurar).
 - Mensagem: *"👀 Você está há 1 hora na tela. Descanse os olhos por 5 minutos!"*
 

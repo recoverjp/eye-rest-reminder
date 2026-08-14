@@ -34,15 +34,36 @@ def _play_sound() -> None:
         winsound.MessageBeep()
 
 
+# Cache do toaster do windows-toasts (criar uma vez evita reprocessar).
+_toaster = None
+
+
 def _show_notification(title: str, message: str) -> None:
     """Exibe uma notificação popup nativa do Windows.
 
-    Tenta usar `plyer` primeiro (mais portável) e, se indisponível, recorre
-    ao `win10toast`.
+    Usa `windows-toasts` (API WinRT nativa) como opção principal — ela mostra
+    a notificação na Central de Ações **sem deixar ícone na bandeja do sistema**.
+    Se não estiver disponível, recorre a plyer / win10toast (que podem deixar
+    ícones acumulados na área de notificação).
     """
+    global _toaster
+
+    # 1) windows-toasts (WinRT) — sem ícone na bandeja.
+    try:
+        from windows_toasts import Toast, WindowsToaster
+
+        if _toaster is None:
+            _toaster = WindowsToaster("eye-rest-reminder")
+        toast = Toast()
+        toast.text_fields = [title, message]
+        _toaster.show_toast(toast)
+        return
+    except Exception:
+        pass
+
     duration = config.NOTIFICATION_DURATION_SECONDS
 
-    # 1) Tenta via plyer
+    # 2) Fallback via plyer
     try:
         from plyer import notification
 
@@ -56,7 +77,7 @@ def _show_notification(title: str, message: str) -> None:
     except Exception:
         pass
 
-    # 2) Fallback via win10toast
+    # 3) Fallback via win10toast
     try:
         from win10toast import ToastNotifier
 
@@ -67,7 +88,7 @@ def _show_notification(title: str, message: str) -> None:
     except Exception:
         pass
 
-    # 3) Fallback final: apenas imprime no terminal.
+    # 4) Fallback final: apenas imprime no terminal.
     print(f"\n{'=' * 60}\n{title}\n{message}\n{'=' * 60}\n")
 
 

@@ -78,6 +78,39 @@ def _confirm_hand_on_head(cap, hand_detector) -> bool:
     return samples > 0 and positives >= needed
 
 
+def _sleep_remaining(loop_start: float) -> None:
+    """Dorme o restante do intervalo, descontando o tempo já gasto no ciclo."""
+    sleep_time = config.FRAME_INTERVAL_SECONDS - (_now() - loop_start)
+    if sleep_time > 0:
+        time.sleep(sleep_time)
+
+
+def _open_camera():
+    """Abre a webcam, aquece e retorna o VideoCapture — ou None se indisponível.
+
+    Retornar None acontece, por exemplo, quando outro app (Google Meet, Zoom…)
+    está usando a câmera. Nesse caso o loop apenas pula a checagem.
+    """
+    cap = cv2.VideoCapture(config.WEBCAM_INDEX, cv2.CAP_DSHOW)
+    if not cap.isOpened():
+        cap.release()
+        cap = cv2.VideoCapture(config.WEBCAM_INDEX)  # fallback sem DSHOW
+    if not cap.isOpened():
+        cap.release()
+        return None
+
+    # Aquece: os primeiros frames vêm escuros (auto-exposição). Também valida
+    # que a câmera realmente entrega imagem (não só "abriu").
+    frame = None
+    for _ in range(config.CAMERA_WARMUP_FRAMES):
+        _, frame = cap.read()
+        time.sleep(0.05)
+    if frame is None:
+        cap.release()
+        return None
+    return cap
+
+
 def main() -> None:
     alert_after_seconds = config.ALERT_AFTER_MINUTES * 60
     cooldown_seconds = config.COOLDOWN_AFTER_ALERT_MINUTES * 60
@@ -123,25 +156,10 @@ def main() -> None:
             print(f"  AVISO: 'olhos fechados' desativado — {exc}")
             eye_detector = None
 
-    cap = cv2.VideoCapture(config.WEBCAM_INDEX, cv2.CAP_DSHOW)
-    if not cap.isOpened():
-        # Tenta sem o backend DSHOW (específico do Windows) como fallback.
-        cap = cv2.VideoCapture(config.WEBCAM_INDEX)
-    if not cap.isOpened():
-        print(
-            f"ERRO: não foi possível abrir a webcam (índice "
-            f"{config.WEBCAM_INDEX}). Verifique se ela está conectada e se "
-            f"nenhum outro programa a está usando."
-        )
-        return
-
-    # Aquece a câmera: os primeiros frames costumam vir escuros (auto-exposição
-    # ainda ajustando), o que atrapalha a detecção. Descartamos alguns.
-    for _ in range(5):
-        cap.read()
-        time.sleep(0.2)
-
-    print("Webcam aberta. Monitorando... (Ctrl+C para sair)\n")
+    print(
+        f"Monitorando (checa a cada {int(config.FRAME_INTERVAL_SECONDS)}s e "
+        f"libera a câmera entre as checagens). Ctrl+C para sair.\n"
+    )
 
     # ----- Estado do contador -----
     session_start = None   # instante em que a presença contínua começou
@@ -150,14 +168,27 @@ def main() -> None:
     hand_cooldown_until = 0.0  # cooldown do alerta de "mão na cabeça"
     eyes_closed_since = None    # instante em que os olhos começaram fechados
 
+    cap = None
     try:
         while True:
             loop_start = _now()
 
+            # Abre a câmera só para esta checagem e libera logo depois, para
+            # não travar a webcam para outros apps (Google Meet, Zoom…).
+            cap = _open_camera()
+            if cap is None:
+                print(
+                    f"{_timestamp()} Câmera indisponível (em uso por outro "
+                    f"app?) — checagem pulada"
+                )
+                _sleep_remaining(loop_start)
+                continue
+
             ok, frame = cap.read()
             if not ok or frame is None:
                 print(f"{_timestamp()} Falha ao capturar frame da webcam.")
-                time.sleep(config.FRAME_INTERVAL_SECONDS)
+                cap.release()
+                _sleep_remaining(loop_start)
                 continue
 
             face_present = detector.detect(frame)
@@ -270,16 +301,16 @@ def main() -> None:
                         f"contador pausado"
                     )
 
-            # Mantém ~1 frame por segundo, descontando o tempo já gasto.
-            elapsed = _now() - loop_start
-            sleep_time = config.FRAME_INTERVAL_SECONDS - elapsed
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+            # Libera a câmera para outros apps usarem entre as checagens.
+            cap.release()
+            cap = None
+            _sleep_remaining(loop_start)
 
     except KeyboardInterrupt:
         print("\nEncerrando eye-rest-reminder. Até logo!")
     finally:
-        cap.release()
+        if cap is not None:
+            cap.release()
 
 
 if __name__ == "__main__":

@@ -34,6 +34,11 @@ YOLO_MODEL = "yolov8n.pt"
 # Confiança mínima para considerar uma detecção válida.
 DETECTION_CONFIDENCE = 0.4
 
+# Quantos frames descartar ao abrir a câmera (aquecimento da auto-exposição).
+# A câmera é aberta e liberada a cada checagem para não travar a webcam para
+# outros apps (Google Meet, Zoom…), então aquecemos um pouco a cada abertura.
+CAMERA_WARMUP_FRAMES = 4
+
 # Intervalo entre as verificações, em segundos.
 # Como o objetivo é contar tempo em escala de minutos/horas, não é preciso
 # verificar a cada segundo. 10s é bem folgado e reduz muito o uso de CPU.
