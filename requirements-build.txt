@@ -1,0 +1,6 @@
+# Dependências usadas SÓ para gerar o executável (.exe).
+# Instale as de runtime com:  pip install -r requirements.txt
+-r requirements.txt
+
+# Empacotador que transforma o projeto em um único .exe.
+pyinstaller>=6.0

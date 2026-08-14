@@ -16,6 +16,7 @@ import os
 import urllib.request
 
 import config
+from paths import data_file
 
 
 MODEL_FILENAME = "face_landmarker.task"
@@ -30,7 +31,7 @@ BLINK_RIGHT = "eyeBlinkRight"
 
 def _ensure_model() -> str:
     """Garante que o arquivo do modelo exista localmente; baixa se preciso."""
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), MODEL_FILENAME)
+    path = data_file(MODEL_FILENAME)
     if not os.path.isfile(path):
         print(f"Baixando modelo facial ({MODEL_FILENAME}, ~3 MB)...")
         urllib.request.urlretrieve(MODEL_URL, path)

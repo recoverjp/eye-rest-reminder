@@ -19,6 +19,14 @@ stats.json
 *.pt
 *.task
 
+# --- Saída do PyInstaller (o .exe vai para os Releases, não para o repo) ---
+build/
+dist/
+*.log
+
+# --- Estado local do usuário criado ao rodar pelo código-fonte ---
+eye-rest-reminder.log
+
 # --- Sistema operacional ---
 Thumbs.db
 Desktop.ini

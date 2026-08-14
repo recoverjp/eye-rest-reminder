@@ -22,6 +22,7 @@ import os
 import urllib.request
 
 import config
+from paths import data_file
 
 
 # Índices dos landmarks do Pose (padrão MediaPipe, 33 pontos).
@@ -64,7 +65,7 @@ def _dist(a, b) -> float:
 
 def _ensure_model() -> str:
     """Garante que o arquivo do modelo exista localmente; baixa se preciso."""
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), MODEL_FILENAME)
+    path = data_file(MODEL_FILENAME)
     if not os.path.isfile(path):
         print(f"Baixando modelo de pose ({MODEL_FILENAME}, ~5 MB)...")
         urllib.request.urlretrieve(MODEL_URL, path)

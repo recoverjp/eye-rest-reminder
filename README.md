@@ -16,6 +16,33 @@ conta o tempo contínuo de uso e dispara uma **notificação nativa do Windows**
 
 ---
 
+## ⬇️ Baixar (sem instalar nada)
+
+Não quer mexer com Python? Baixe o executável pronto:
+
+1. Vá em **[Releases](../../releases)** e baixe o `eye-rest-reminder.exe` da
+   versão mais recente.
+2. Dê **duplo-clique**. Não abre janela nenhuma — aparece só um **ícone de olho**
+   na bandeja do Windows (perto do relógio, talvez atrás da setinha **^**).
+3. Clique com o **botão direito** nesse ícone para ligar/desligar recursos, ver
+   o resumo do dia ou sair.
+
+> - **Windows apenas.** É um `.exe` único, sem instalação.
+> - **A 1ª abertura demora alguns segundos** (ele se descompacta) e, se você usar
+>   os recursos de mão na cabeça / postura / piscar, baixa uns ~8 MB de modelos
+>   do MediaPipe na primeira vez.
+> - O **Windows SmartScreen** pode avisar que é de "editor desconhecido" (o `.exe`
+>   não é assinado). Clique em **Mais informações → Executar assim mesmo**.
+> - Suas configurações e estatísticas ficam em
+>   `%LOCALAPPDATA%\eye-rest-reminder\`.
+
+Quer que ele **inicie junto com o Windows**? Aperte `Win + R`, digite
+`shell:startup`, Enter, e coloque um atalho do `.exe` nessa pasta.
+
+*(Prefere rodar pelo código-fonte? Veja [Instalação](#instalação) mais abaixo.)*
+
+---
+
 ## 🔒 Privacidade
 
 Todo o processamento é **100% local, na sua máquina**. A aplicação apenas lê o
@@ -230,10 +257,15 @@ eye-rest-reminder/
   eyes.py                  ← detecção de "olhos fechados" (MediaPipe)
   notifier.py              ← notificação Windows + som
   config.py                ← constantes configuráveis (tempos)
+  paths.py                 ← pasta de dados gravável (funciona no .exe também)
   test_smoke.py            ← teste rápido de webcam + detector
   iniciar.bat              ← atalho: inicia mostrando o log
   iniciar-silencioso.vbs   ← atalho: inicia em segundo plano (sem janela)
-  requirements.txt
+  build.bat                ← gera o .exe localmente (PyInstaller)
+  eye-rest-reminder.spec   ← receita do PyInstaller para o .exe
+  assets/                  ← ícone (.ico), imagem de preview
+  requirements.txt         ← dependências de runtime
+  requirements-build.txt   ← dependências para gerar o .exe
   README.md
 ```
 
@@ -261,6 +293,37 @@ Para que o app suba sozinho ao ligar o computador:
 
 Para desativar depois, apague esse atalho da pasta `shell:startup` (ou use o
 Gerenciador de Tarefas → aba **Aplicativos de inicialização**).
+
+---
+
+## 🛠️ Gerar o executável (.exe) você mesmo
+
+O `.exe` publicado nos [Releases](../../releases) é gerado com o
+**[PyInstaller](https://pyinstaller.org/)**. Para gerar por conta própria:
+
+```powershell
+# na pasta do projeto
+python -m pip install -r requirements-build.txt
+python -m PyInstaller eye-rest-reminder.spec --noconfirm
+```
+
+Ou simplesmente dê **duplo-clique no [build.bat](build.bat)**. O resultado sai
+em `dist\eye-rest-reminder.exe`.
+
+> O `.exe` fica grande (~300 MB) porque embute o Python, o OpenCV e o MediaPipe.
+> A receita ([eye-rest-reminder.spec](eye-rest-reminder.spec)) já exclui o
+> PyTorch/YOLO para não inflar ainda mais.
+
+### Publicação automática (mantenedores)
+
+O repositório tem um workflow do **GitHub Actions**
+([.github/workflows/release.yml](.github/workflows/release.yml)) que compila o
+`.exe` no Windows e o publica nos Releases automaticamente. Basta criar uma tag:
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ---
 

@@ -4,12 +4,13 @@ Reinicia automaticamente quando vira o dia. Usado para o "Resumo do dia".
 """
 
 import json
-import os
 import threading
 from datetime import datetime
 
+from paths import data_file
 
-_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stats.json")
+
+_PATH = data_file("stats.json")
 
 # Contadores de avisos disparados no dia.
 _COUNTERS = ["eye_rest", "water", "hand_on_head", "posture", "blink", "screen_distance"]

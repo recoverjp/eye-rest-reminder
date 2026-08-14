@@ -5,13 +5,13 @@ Os valores iniciais vêm de `config.py`; depois ficam salvos em `settings.json`
 """
 
 import json
-import os
 import threading
 
 import config
+from paths import data_file
 
 
-_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
+_PATH = data_file("settings.json")
 
 # Chave interna -> (rótulo no menu, valor padrão vindo do config)
 FEATURES = [

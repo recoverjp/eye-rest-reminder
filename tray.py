@@ -9,6 +9,12 @@ Rode com:  pythonw tray.py   (sem janela)  ou  python tray.py  (com log)
 
 import threading
 
+# Antes de qualquer print/import pesado: no .exe sem console, redireciona a
+# saída para um arquivo de log (senão o primeiro print derruba o programa).
+from paths import setup_frozen_io
+
+setup_frozen_io()
+
 import pystray
 from PIL import Image, ImageDraw
 from pystray import Menu, MenuItem
