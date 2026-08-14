@@ -54,9 +54,13 @@ HAND_ON_HEAD_COOLDOWN_SECONDS = 60
 
 # Antes de notificar, confirma que a mão CONTINUA na cabeça por este tempo
 # (segundos), re-checando a cada 1s. Filtra gestos passageiros — coçada
-# rápida, ajeitar o óculos, passar a mão no cabelo. Só notifica se a mão
-# permanecer durante toda a janela. Use 0 para desativar a confirmação.
-HAND_ON_HEAD_CONFIRM_SECONDS = 4
+# rápida, ajeitar o óculos, passar a mão no cabelo. Use 0 para desativar.
+HAND_ON_HEAD_CONFIRM_SECONDS = 8
+
+# Fração das amostras da confirmação em que a mão precisa ser detectada.
+# A detecção da mão na cabeça é intermitente (~50%, por oclusão), então
+# exigimos uma boa parte — não todas. Menor = mais fácil confirmar.
+HAND_ON_HEAD_CONFIRM_FRACTION = 0.35
 
 HAND_ON_HEAD_TITLE = "Mão na cabeça ✋"
 HAND_ON_HEAD_MESSAGE = "✋ Você está com a mão na cabeça de novo — pare de coçar! \U0001F642"

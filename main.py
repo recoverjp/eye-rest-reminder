@@ -60,15 +60,22 @@ def _confirm_hand_on_head(cap, hand_detector) -> bool:
     )
     deadline = _now() + seconds
     samples = 0
+    positives = 0
     while _now() < deadline:
         time.sleep(1.0)
         ok, frame = cap.read()
         if not ok or frame is None:
             continue
         samples += 1
-        if not hand_detector.detect(frame):
-            return False  # a mão saiu → gesto passageiro
-    return samples > 0
+        if hand_detector.detect(frame):
+            positives += 1
+
+    # A mão parada na cabeça é detectada de forma intermitente (~50%, por
+    # oclusão parcial). Exigimos uma boa FRAÇÃO das amostras — não todas.
+    # Um gesto passageiro (coçada rápida) só aparece nos primeiros frames e
+    # não atinge a fração; a mão no queixo nem chega aqui (barrada na detecção).
+    needed = max(2, round(samples * config.HAND_ON_HEAD_CONFIRM_FRACTION))
+    return samples > 0 and positives >= needed
 
 
 def main() -> None:

@@ -37,8 +37,17 @@ LEFT_INDEX, RIGHT_INDEX = 19, 20
 # dá ~4.5+. 2.5 pega o gesto com folga e fica bem longe do falso positivo.
 HEAD_TOUCH_RATIO = 2.5
 
-# Visibilidade mínima de um landmark para confiarmos nele.
+# A mão precisa estar ACIMA da linha das orelhas (com esta folga, em múltiplos
+# da largura da cabeça) para contar como "na cabeça". Isso distingue mão na
+# cabeça (acima das orelhas) de mão no queixo/apoiando o rosto (abaixo delas).
+# Menor/negativo = mais rígido (exige mão bem no alto).
+VERTICAL_MARGIN = 0.3
+
+# Visibilidade mínima das orelhas (referência) para confiarmos nelas.
 MIN_VISIBILITY = 0.5
+
+# Visibilidade mínima da MÃO para confiarmos na posição dela.
+HAND_MIN_VISIBILITY = 0.5
 
 # Modelo Pose Landmarker (lite) — baixado automaticamente se não existir.
 MODEL_FILENAME = "pose_landmarker_lite.task"
@@ -105,18 +114,27 @@ class HandOnHeadDetector:
         left_ear, right_ear = lm[LEFT_EAR], lm[RIGHT_EAR]
         left_sh, right_sh = lm[LEFT_SHOULDER], lm[RIGHT_SHOULDER]
 
+        ears_visible = (left_ear.visibility > MIN_VISIBILITY
+                        and right_ear.visibility > MIN_VISIBILITY)
+
         # Tamanho da cabeça (escala de normalização). Se as orelhas não estão
         # visíveis, usamos um fallback baseado na largura dos ombros.
-        if (left_ear.visibility > MIN_VISIBILITY
-                and right_ear.visibility > MIN_VISIBILITY):
+        if ears_visible:
             head_size = _dist(left_ear, right_ear)
         else:
             head_size = _dist(left_sh, right_sh) * 0.5
         if head_size <= 0.01:
             return False  # pessoa muito longe / landmarks ruins
 
-        # Linha dos ombros (mão precisa estar ACIMA disso = y menor).
-        shoulder_y = (left_sh.y + right_sh.y) / 2.0
+        # Limite vertical: a mão precisa estar ACIMA disso (y menor).
+        # Preferimos a linha das orelhas — mão na cabeça fica acima das orelhas
+        # (rel_ear negativo), mão no queixo fica abaixo. Sem orelhas visíveis,
+        # caímos para a linha dos ombros (menos preciso).
+        if ears_visible:
+            ear_y = (left_ear.y + right_ear.y) / 2.0
+            vertical_limit = ear_y + VERTICAL_MARGIN * head_size
+        else:
+            vertical_limit = (left_sh.y + right_sh.y) / 2.0
 
         # Candidatos de "mão": pulso e ponta do indicador de cada lado.
         hand_points = [
@@ -125,11 +143,11 @@ class HandOnHeadDetector:
         ]
 
         for hand in hand_points:
-            if hand.visibility < MIN_VISIBILITY:
+            if hand.visibility < HAND_MIN_VISIBILITY:
                 continue
-            raised = hand.y < shoulder_y            # mão levantada
+            above = hand.y < vertical_limit         # mão acima da orelha
             near = _dist(hand, nose) < HEAD_TOUCH_RATIO * head_size
-            if raised and near:
+            if above and near:
                 return True
 
         return False
