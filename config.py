@@ -46,6 +46,20 @@ CAMERA_WARMUP_FRAMES = 4
 FRAME_INTERVAL_SECONDS = 10.0
 
 # ---------------------------------------------------------------------------
+# Lembrete de água (por tempo)
+# ---------------------------------------------------------------------------
+
+# Liga/desliga o lembrete para beber água.
+ENABLE_WATER_REMINDER = True
+
+# A cada quantos minutos de PRESENÇA no computador lembrar de beber água.
+# (Só conta enquanto você está na frente da tela; se sair por um tempo, zera.)
+WATER_REMINDER_MINUTES = 60
+
+WATER_TITLE = "Beba água 💧"
+WATER_MESSAGE = "💧 Você está há 1 hora sem beber água. Hidrate-se!"
+
+# ---------------------------------------------------------------------------
 # Detecção de "mão na cabeça" (opcional — requer mediapipe)
 # ---------------------------------------------------------------------------
 

@@ -21,7 +21,7 @@ try:
 except Exception:
     pass
 from detector import create_detector
-from notifier import send_alert, send_hand_on_head_alert
+from notifier import send_alert, send_hand_on_head_alert, send_water_reminder
 
 
 def _now() -> float:
@@ -114,6 +114,7 @@ def _open_camera():
 def main() -> None:
     alert_after_seconds = config.ALERT_AFTER_MINUTES * 60
     cooldown_seconds = config.COOLDOWN_AFTER_ALERT_MINUTES * 60
+    water_interval_seconds = config.WATER_REMINDER_MINUTES * 60
 
     print("Iniciando eye-rest-reminder...")
     print(
@@ -167,6 +168,7 @@ def main() -> None:
     cooldown_until = 0.0   # não dispara novo alerta antes deste instante
     hand_cooldown_until = 0.0  # cooldown do alerta de "mão na cabeça"
     eyes_closed_since = None    # instante em que os olhos começaram fechados
+    water_start = None          # início da contagem do lembrete de água
 
     cap = None
     try:
@@ -218,6 +220,18 @@ def main() -> None:
                             )
                 except Exception as exc:
                     print(f"{_timestamp()} Erro na detecção de gesto: {exc}")
+
+            # ----- Lembrete de água (por tempo de presença) -----
+            if config.ENABLE_WATER_REMINDER and face_present:
+                if water_start is None:
+                    water_start = now
+                elif now - water_start >= water_interval_seconds:
+                    print(
+                        f"{_timestamp()} >>> LEMBRETE: beba água! "
+                        f"({config.WATER_REMINDER_MINUTES} min sem beber)"
+                    )
+                    send_water_reminder()
+                    water_start = now  # reinicia o intervalo
 
             # Estado dos olhos (fechado/aberto), se o detector estiver ativo.
             eyes_closed = None
@@ -289,6 +303,7 @@ def main() -> None:
                         session_start = None
                         last_seen = None
                         cooldown_until = 0.0
+                        water_start = None  # saiu: reinicia o timer de água
                     else:
                         print(
                             f"{_timestamp()} Sem rosto detectado — "

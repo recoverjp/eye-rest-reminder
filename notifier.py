@@ -106,3 +106,8 @@ def send_alert() -> None:
 def send_hand_on_head_alert() -> None:
     """Alerta de 'mão na cabeça' (usa título/mensagem do config)."""
     notify(config.HAND_ON_HEAD_TITLE, config.HAND_ON_HEAD_MESSAGE)
+
+
+def send_water_reminder() -> None:
+    """Lembrete para beber água (usa título/mensagem do config)."""
+    notify(config.WATER_TITLE, config.WATER_MESSAGE)

@@ -38,6 +38,9 @@ ou upload de qualquer tipo.
 - Se você sumir por mais de **2 minutos** → o contador é **zerado**
   (considera que você saiu).
 - Após um alerta, aguarda **10 minutos** antes de poder alertar de novo.
+- 💧 **Lembrete de água:** a cada **1 hora** de presença na tela, também avisa
+  para você beber água (por tempo, não por detecção). Se você sair por um
+  tempo, o timer reinicia.
 
 ### 🖐️ Bônus: alerta de "mão na cabeça" (opcional)
 
@@ -158,6 +161,8 @@ Todas as constantes ficam em [config.py](config.py) e são fáceis de ajustar:
 |---|---|---|
 | `ALERT_AFTER_MINUTES` | `60` | Minutos contínuos até o alerta |
 | `RESET_AFTER_SECONDS` | `120` | Segundos sem rosto para zerar o contador |
+| `ENABLE_WATER_REMINDER` | `True` | Liga o lembrete de beber água |
+| `WATER_REMINDER_MINUTES` | `60` | Minutos de presença até lembrar de beber água |
 | `ENABLE_EYES_CLOSED_REST` | `True` | Trata olhos fechados por um tempo como descanso |
 | `EYES_CLOSED_REST_SECONDS` | `30` | Segundos de olhos fechados que contam como descanso |
 | `EYE_CLOSED_THRESHOLD` | `0.45` | Limiar do blendshape para considerar o olho fechado |
