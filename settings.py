@@ -27,6 +27,8 @@ FEATURES = [
 _DEFAULTS = {key: default for key, _label, default in FEATURES}
 # Valores não-booleanos persistidos junto (ex.: calibração de postura).
 _DEFAULTS["posture_baseline"] = None
+# Se já perguntamos (na 1ª execução) se o usuário quer iniciar com o Windows.
+_DEFAULTS["asked_autostart"] = False
 
 
 class Settings:

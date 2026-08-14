@@ -19,10 +19,45 @@ import pystray
 from PIL import Image, ImageDraw
 from pystray import Menu, MenuItem
 
+import autostart
 import main
 from notifier import notify
 from settings import Settings, FEATURES
 from stats import DailyStats
+
+
+def _ask_autostart_on_first_run(settings: Settings) -> None:
+    """Na 1ª execução, pergunta (caixa de diálogo) se quer iniciar com o Windows.
+
+    Só pergunta uma vez — guarda a resposta em settings ("asked_autostart").
+    Silencioso e sem efeito se o autostart não for suportado ou algo falhar.
+    """
+    if settings.get_value("asked_autostart", False) or not autostart.is_supported():
+        return
+    try:
+        import ctypes
+
+        # MB_YESNO | MB_ICONQUESTION | MB_DEFBUTTON2 | MB_SETFOREGROUND | MB_TOPMOST
+        # MB_DEFBUTTON2 deixa o "Não" como padrão: um Enter acidental NÃO ativa
+        # o autostart — só um clique deliberado em "Sim".
+        flags = 0x04 | 0x20 | 0x100 | 0x10000 | 0x40000
+        answer = ctypes.windll.user32.MessageBoxW(
+            0,
+            "Quer que o eye-rest-reminder inicie automaticamente junto com o "
+            "Windows?\n\nVocê pode mudar isso quando quiser pelo menu do ícone "
+            "na bandeja (botão direito).",
+            "eye-rest-reminder",
+            flags,
+        )
+        if answer == 6:  # IDYES
+            if autostart.enable():
+                notify("Início automático ativado 🚀",
+                       "O eye-rest-reminder vai abrir junto com o Windows.")
+    except Exception:
+        pass
+    finally:
+        # Marca como perguntado mesmo se algo falhar, para não insistir.
+        settings.set_value("asked_autostart", True)
 
 
 def _make_icon_image() -> Image.Image:
@@ -68,9 +103,25 @@ def run_tray() -> None:
                "Sente reto e olhe para a tela — vou salvar sua postura de "
                "referência nos próximos segundos.")
 
+    def on_autostart(icon, item):
+        ligado = autostart.toggle()
+        if ligado:
+            notify("Início automático ativado 🚀",
+                   "O eye-rest-reminder vai abrir junto com o Windows.")
+        else:
+            notify("Início automático desativado",
+                   "O eye-rest-reminder não vai mais abrir junto com o Windows.")
+
     def on_quit(icon, item):
         stop_event.set()
         icon.stop()
+
+    autostart_item = MenuItem(
+        "Iniciar com o Windows",
+        on_autostart,
+        checked=lambda item: autostart.is_enabled(),
+        visible=autostart.is_supported(),
+    )
 
     menu = Menu(
         MenuItem("eye-rest-reminder", None, enabled=False),
@@ -79,9 +130,13 @@ def run_tray() -> None:
         Menu.SEPARATOR,
         MenuItem("Calibrar postura (sente reto)", on_calibrate),
         MenuItem("Resumo do dia", on_summary),
+        autostart_item,
         Menu.SEPARATOR,
         MenuItem("Sair", on_quit),
     )
+
+    # Na primeira vez que o app roda, pergunta se quer iniciar com o Windows.
+    _ask_autostart_on_first_run(settings)
 
     icon = pystray.Icon(
         "eye-rest-reminder", _make_icon_image(),

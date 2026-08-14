@@ -36,8 +36,9 @@ Não quer mexer com Python? Baixe o executável pronto:
 > - Suas configurações e estatísticas ficam em
 >   `%LOCALAPPDATA%\eye-rest-reminder\`.
 
-Quer que ele **inicie junto com o Windows**? Aperte `Win + R`, digite
-`shell:startup`, Enter, e coloque um atalho do `.exe` nessa pasta.
+**Iniciar junto com o Windows?** Na **primeira vez** que você abre, o app já
+**pergunta** se quer isso. Você também pode ligar/desligar quando quiser pelo
+menu da bandeja (**botão direito → Iniciar com o Windows**).
 
 *(Prefere rodar pelo código-fonte? Veja [Instalação](#instalação) mais abaixo.)*
 
@@ -201,6 +202,8 @@ de olho** na bandeja do Windows (perto do relógio — pode estar atrás da seti
 - 🧍 **Calibrar postura (sente reto)** — salva sua postura de referência para o
   aviso de postura funcionar.
 - 📊 **Resumo do dia** — mostra tempo de tela e contagem de avisos de hoje.
+- 🚀 **Iniciar com o Windows** — liga/desliga o início automático no login (via
+  registro do usuário, sem admin). Na 1ª execução o app já pergunta se você quer.
 - **Sair** — encerra o app de forma limpa (não precisa mais do Gerenciador de
   Tarefas).
 
@@ -258,6 +261,7 @@ eye-rest-reminder/
   notifier.py              ← notificação Windows + som
   config.py                ← constantes configuráveis (tempos)
   paths.py                 ← pasta de dados gravável (funciona no .exe também)
+  autostart.py             ← liga/desliga início com o Windows (registro HKCU)
   test_smoke.py            ← teste rápido de webcam + detector
   iniciar.bat              ← atalho: inicia mostrando o log
   iniciar-silencioso.vbs   ← atalho: inicia em segundo plano (sem janela)
@@ -282,17 +286,14 @@ eye-rest-reminder/
 
 ### Iniciar junto com o Windows (opcional)
 
-Para que o app suba sozinho ao ligar o computador:
+O jeito mais fácil é pelo **menu da bandeja → "Iniciar com o Windows"** (funciona
+tanto no `.exe` quanto rodando pelo código-fonte). Ele cria/remove um registro em
+`HKCU\...\Run` — por usuário, sem admin.
 
-1. Pressione `Win + R`, digite `shell:startup` e Enter — abre a pasta de
-   Inicialização.
-2. Crie ali um **atalho** para o `iniciar-silencioso.vbs` (clique com o botão
-   direito no `.vbs` → *Enviar para* → *Área de trabalho*, depois mova o atalho
-   para a pasta de Inicialização — ou arraste com o botão direito e escolha
-   *Criar atalhos aqui*).
-
-Para desativar depois, apague esse atalho da pasta `shell:startup` (ou use o
-Gerenciador de Tarefas → aba **Aplicativos de inicialização**).
+Alternativa manual (atalho): pressione `Win + R`, digite `shell:startup`, Enter, e
+crie ali um **atalho** para o `iniciar-silencioso.vbs`. Para desativar, apague o
+atalho dessa pasta (ou use o Gerenciador de Tarefas → **Aplicativos de
+inicialização**).
 
 ---
 
