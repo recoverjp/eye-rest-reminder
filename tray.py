@@ -73,6 +73,12 @@ def _make_icon_image() -> Image.Image:
 
 
 def run_tray() -> None:
+    # Uma cópia só: o atalho da pasta Inicializar + a chave Run já abriram duas.
+    if not main.acquire_single_instance():
+        notify("eye-rest-reminder já está aberto",
+               "Ele já está rodando — procure o ícone do olho perto do relógio.")
+        return
+
     settings = Settings()
     stats = DailyStats()
     stop_event = threading.Event()

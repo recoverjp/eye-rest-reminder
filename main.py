@@ -112,6 +112,28 @@ def _measure_blink_rate(cap, eye_detector):
     return blinks * 60.0 / seconds
 
 
+_instance_mutex = None  # mantido vivo enquanto o processo roda
+
+
+def acquire_single_instance() -> bool:
+    """Garante uma única cópia do app. Retorna False se outra já está rodando.
+
+    Usa um mutex nomeado do Windows, liberado sozinho quando o processo morre.
+    Duas cópias disputam a webcam a cada ciclo, e a perdedora falhava ao abrir.
+    Fora do Windows, sempre True.
+    """
+    global _instance_mutex
+    try:
+        import ctypes
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    except (ImportError, AttributeError, OSError):
+        return True
+    kernel32.CreateMutexW.restype = ctypes.c_void_p
+    _instance_mutex = kernel32.CreateMutexW(None, False, "Local\\eye-rest-reminder")
+    ERROR_ALREADY_EXISTS = 183
+    return ctypes.get_last_error() != ERROR_ALREADY_EXISTS
+
+
 def _sleep_remaining(loop_start: float) -> None:
     """Dorme o restante do intervalo, descontando o tempo já gasto no ciclo."""
     sleep_time = config.FRAME_INTERVAL_SECONDS - (_now() - loop_start)
@@ -124,11 +146,14 @@ def _open_camera():
 
     Retornar None acontece, por exemplo, quando outro app (Google Meet, Zoom…)
     está usando a câmera. Nesse caso o loop apenas pula a checagem.
+
+    Só DirectShow, SEM fallback para o backend padrão (MSMF). O MSMF passa pelo
+    serviço "Servidor de Quadros de Câmera" do Windows (FrameServer), que vaza
+    ~144 MB a cada abertura — e ele justamente consegue abrir quando a câmera já
+    está em uso, ou seja, vazaria a cada ciclo durante uma chamada de vídeo. Isso
+    levou o FrameServer a 21 GB e travou o PC (medido em 23/09/2026).
     """
     cap = cv2.VideoCapture(config.WEBCAM_INDEX, cv2.CAP_DSHOW)
-    if not cap.isOpened():
-        cap.release()
-        cap = cv2.VideoCapture(config.WEBCAM_INDEX)  # fallback sem DSHOW
     if not cap.isOpened():
         cap.release()
         return None
@@ -468,6 +493,9 @@ def run(settings=None, stop_event=None, stats=None, calibrate_posture=None) -> N
 
 def main() -> None:
     """Executa o monitoramento standalone (sem bandeja), usando settings.json."""
+    if not acquire_single_instance():
+        print("O eye-rest-reminder já está rodando (veja o ícone na bandeja).")
+        return
     run()
 
 
