@@ -117,5 +117,6 @@ nos Releases ao dar push de uma tag `v*`.
 
 ## Convenção de commits
 
-Mensagens de commit terminam com:
-`Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
+Mensagens de commit terminam com uma linha de coautoria com o nome do modelo
+que fez o trabalho (o mesmo que aparece na atribuição padrão do Claude Code):
+`Co-Authored-By: Claude <modelo> <noreply@anthropic.com>`
